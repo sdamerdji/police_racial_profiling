@@ -1,0 +1,1 @@
+All data comes courtesy of Stanford's Open Policing Project (available here: https://openpolicing.stanford.edu/data/ ) and Berkeley's data disclosure (available here: https://data.cityofberkeley.info/Public-Safety/Berkeley-PD-Stop-Data-Jan-26-2015-to-Sep-30-2020-/4tbf-3yt8)
