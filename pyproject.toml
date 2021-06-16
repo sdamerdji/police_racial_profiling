@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "police_racial_profiling"
+version = "0.1.0"
+description = "Comparing metrics for racial profiling in police stops."
+authors = ["Salim Damerdji, Brian Jones, Moira Huang"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pandas = "^1.2.4"
+matplotlib = "^3.4.2"
+statistics = "^1.0.3"
+numpy = "^1.20.3"
+seaborn = "^0.11.1"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
