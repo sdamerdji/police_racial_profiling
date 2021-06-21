@@ -5,12 +5,16 @@ description = "Comparing metrics for racial profiling in police stops."
 authors = ["Salim Damerdji, Brian Jones, Moira Huang"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.8,<3.10"
 pandas = "^1.2.4"
 matplotlib = "^3.4.2"
 statistics = "^1.0.3"
 numpy = "^1.20.3"
 seaborn = "^0.11.1"
+astral = "^2.2"
+timezonefinder = "^5.2.0"
+pytz = "^2021.1"
+statsmodels = "^0.12.2"
 
 [tool.poetry.dev-dependencies]
 
