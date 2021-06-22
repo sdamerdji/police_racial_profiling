@@ -19,6 +19,7 @@ source $HOME/.poetry/env
 After installing poetry, run:
 ```sh
 poetry install
+poetry shell
 poetry run jupyter lab
 ```
 to spin up a Jupyter lab shell with all of the dependencies.
