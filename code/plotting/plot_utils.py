@@ -4,7 +4,7 @@ class PlotParams():
 
     def __init__(self, input_dict=None):
         # eventually we will look for non-default values
-        self.scale = "linear"
+        self.type = "linear"
         self.xax = []
         self.yax = []
         self.xlabel = "x label"
