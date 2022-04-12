@@ -24,9 +24,9 @@ def quiet_checks(df):
 
 def pretty_bool(check):
     if check:
-        result = Fore.GREEN + Style.BRIGHT + "TRUE" + Style.RESET_ALL
+        result = Fore.GREEN + Style.BRIGHT + "PASS" + Style.RESET_ALL
     else:
-        result = Fore.RED + Style.BRIGHT + "FALSE" + Style.RESET_ALL
+        result = Fore.RED + Style.BRIGHT + "FAIL" + Style.RESET_ALL
     return result
 
 
