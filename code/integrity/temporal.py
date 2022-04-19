@@ -174,18 +174,18 @@ def stops_by_day(df, threshold=3):
     bad_days = []
     stops = df["date_time"].dt.floor("d").value_counts()
     day_counts = count_time_elements(min(df["date_time"]), max(df["date_time"]), "day")
-    avg = np.mean(counts)
-    zscores = (counts - avg) / np.sqrt(avg)
+    avg = np.mean(day_counts)
+    zscores = (day_counts - avg) / np.sqrt(avg)
     if any(np.abs(zscores) > threshold):
         # Anyone more than "threshold" sigma from the mean
         success = False
         bad_days_index = zscores.where(np.abs(zscores) > threshold).dropna().keys()
-        bad_days = counts[bad_days_index]
+        bad_days = day_counts[bad_days_index]
     plotparams = PlotParams()
     # make sure they are in the order we want
     plotparams.type = "scatter"
-    plotparams.yax = counts.tolist()
-    plotparams.xax = counts.index.tolist()
+    plotparams.yax = day_counts.tolist()
+    plotparams.xax = day_counts.index.tolist()
     plotparams.title = "Stops by Day"
     plotparams.xlabel = None
     plotparams.ylabel = "Stops"
