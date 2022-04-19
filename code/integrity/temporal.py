@@ -56,12 +56,34 @@ def verbose_checks(df):
         print()
 
 
+### Utility functions
 def pretty_bool(check):
     if check:
         result = Fore.GREEN + Style.BRIGHT + "PASS" + Style.RESET_ALL
     else:
         result = Fore.RED + Style.BRIGHT + "FAIL" + Style.RESET_ALL
     return result
+
+
+def count_time_elements(start_time, end_time, freq):
+    ### Count the time elements between the start and end.
+    ## For example, how many 3 o'clocks are there between noon on the 1st and 5am on the 12th
+    freq_dict = {"day": ["D", 31],
+                 "hour": ["H", 24],
+                 "month": ["M", 12],
+                 "second": ["S", 60],
+                 "minute": ["min", 60]}
+
+    drange = pd.date_range(start_time, end_time, freq=freq_dict[freq][0])
+    if len(drange) < 1000000:
+        res = pd.Series([getattr(x, freq) for x in drange]).value_counts()
+    else:
+        print("Too long. {}".format(len(drange)))
+        tdelta = len(drange)
+        print("{}/{} = {}".format(tdelta, freq_dict[freq][1], tdelta / freq_dict[freq][1]))
+        res = pd.Series([tdelta / freq_dict[freq][1] for x in range(freq_dict[freq][1])],
+                        index=[x for x in range(freq_dict[freq][1])])
+    return res
 
 
 def time_range(df, threshold=pd.Timedelta('180 days')):
@@ -79,6 +101,50 @@ def time_gaps(df, threshold=pd.Timedelta('24 hours')):
     else:
         success = True
     return success, long_gaps
+
+
+def hourly_trends(df, threshold=3):
+    success = True
+    stops = df["date_time"].apply(lambda x: x.hour).value_counts()
+    hour_counts = count_time_elements(min(df["date_time"]), max(df["date_time"]), freq="hour")
+    res = stops / hour_counts
+    avg = np.mean(res)
+    bad_hours = res[res > threshold * avg]
+    if len(bad_hours > 0):
+        success = False
+    plotparams = PlotParams()
+    # make sure they are in the order we want
+    res.sort_index()
+    plotparams.type = "bar"
+    plotparams.xax = res.index.to_list()
+    plotparams.yax = [res[d] for d in plotparams.xax]
+    plotparams.title = "Stops by Hour of Day"
+    plotparams.xlabel = "Hour of Day (24hr time)"
+    plotparams.ylabel = "Stops per Hour"
+
+    return success, plotparams, bad_hours
+
+
+def day_of_month_trends(df, threshold=3):
+    success = True
+    stops = df["date_time"].apply(lambda x: x.day).value_counts()
+    day_counts = count_time_elements(min(df["date_time"]), max(df["date_time"]), freq="day")
+    res = stops / day_counts
+    avg = np.mean(res)
+    bad_days = res[res > threshold * avg]
+    if len(bad_days > 0):
+        success = False
+    plotparams = PlotParams()
+    # make sure they are in the order we want
+    res.sort_index()
+    plotparams.type = "bar"
+    plotparams.xax = res.index.to_list()
+    plotparams.yax = [res[d] for d in plotparams.xax]
+    plotparams.title = "Stops by Day of Month"
+    plotparams.xlabel = "Day of Month"
+    plotparams.ylabel = "Stops per Day"
+
+    return success, plotparams, bad_days
 
 
 def weekday_trends(df, threshold=3):
@@ -106,7 +172,8 @@ def weekday_trends(df, threshold=3):
 def stops_by_day(df, threshold=3):
     success = True
     bad_days = []
-    counts = df["date_time"].dt.floor("d").value_counts()
+    stops = df["date_time"].dt.floor("d").value_counts()
+    day_counts = count_time_elements(min(df["date_time"]), max(df["date_time"]), "day")
     avg = np.mean(counts)
     zscores = (counts - avg) / np.sqrt(avg)
     if any(np.abs(zscores) > threshold):
