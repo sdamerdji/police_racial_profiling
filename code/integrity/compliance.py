@@ -16,8 +16,10 @@ required_fields = {'stop_id',
 
 def quiet_checks(df):
     success = True
-    success = success and all_required_exist(df)
-    success = success and unique_stops(df)
+    check, _, _ = all_required_exist(df)
+    success = success and check
+    check, _ = unique_stops(df)
+    success = success and check
 
     return success
 
@@ -37,11 +39,13 @@ def verbose_checks(df):
     if not check:
         print("   Missing fields: {}".format(missing))
         print("   Extra fields:   {}".format(extra))
-
+    success = success and check
     check, dups = unique_stops(df)
     print("All stops unique: {}".format(pretty_bool(check)))
     if not check:
-        print("   Duplicate stop_ids: {}".format(dups))
+        print("   Duplicate stop_ids: {}".format(dups["stop_id"].values))
+    success = success and check
+    return success
 
 
 def all_required_exist(df):
@@ -72,11 +76,10 @@ def unique_stops(df):
     :return: success(bool), stop_ids that are duplicated somehow
     '''
 
-    uniqs = set(df["stop_id"].unique())
-    dups = set(df["stop_id"]).difference(uniqs)
-    if dups:
-        success = False
-    else:
+    dups = df[df.duplicated("stop_id")]
+    if dups.empty:
         success = True
+    else:
+        success = False
 
     return success, dups

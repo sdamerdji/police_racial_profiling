@@ -1,5 +1,14 @@
 import pandas as pd
+from pandas.tseries.offsets import DateOffset
 import numpy as np
+import nose as nt
+import unittest
+
+import sys, os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'integrity'))
+import compliance as comp
+import temporal as tp
 
 
 # helper functions
@@ -28,8 +37,12 @@ def create_list(core_list, core_freq, series_len):
     return result
 
 
-def create_compliant_df(start_date, end_date):
-    drange = pd.date_range(start_date, end_date, freq="17min")
+def create_compliant_df(start_date, end_date, freq="17min"):
+    if freq == "M":
+        # handle special case for the nth of the month since month lengths are dumb
+        drange = pd.date_range(start_date, end_date, freq=DateOffset(months=1))
+    else:
+        drange = pd.date_range(start_date, end_date, freq=freq)
     stop_id = [x for x in range(len(drange))]
     mydict = {"date_time": drange, "stop_id": stop_id}
     df = pd.DataFrame(mydict)
@@ -103,3 +116,101 @@ def create_compliant_df(start_date, end_date):
 
     df = pd.DataFrame(mydict)
     return df
+
+
+class TestCompliance(unittest.TestCase):
+    @classmethod
+    def setup_class(cls):
+        cls.start_date = pd.Timestamp('1-1-2022')
+        cls.end_date = pd.Timestamp('8-1-2022')
+        cls.clean_df = create_compliant_df(cls.start_date, cls.end_date)
+
+    # Compliance
+    def test_clean_df_compliance(self):
+        print("Test the clean dataframe...")
+        self.assertTrue(comp.verbose_checks(self.clean_df))
+        self.assertTrue(comp.quiet_checks(self.clean_df))
+
+    def test_all_required_exist(self):
+        bad_df = self.clean_df.drop("race", axis=1, inplace=False)
+        self.assertFalse(comp.verbose_checks(bad_df))
+        self.assertFalse(comp.quiet_checks(bad_df))
+
+    def test_unique_stops(self):
+        extra_row = self.clean_df[0:1]
+        dup_df = self.clean_df.append(extra_row)
+        self.assertFalse(comp.verbose_checks(dup_df))
+        self.assertFalse(comp.quiet_checks(dup_df))
+
+    # Temporal
+    def test_clean_df_temporal(self):
+        self.assertTrue(tp.verbose_checks(self.clean_df, plotem=False))
+        self.assertTrue(tp.quiet_checks(self.clean_df))
+
+    def test_time_range(self):
+        short_df = self.clean_df[0:10]
+        self.assertFalse(tp.verbose_checks(short_df, plotem=False))
+        self.assertFalse(tp.quiet_checks(short_df))
+
+    def test_time_gaps(self):
+        gapped_df = self.clean_df.drop(axis=0, index=[x + 50 for x in range(150)])
+        self.assertFalse(tp.verbose_checks(gapped_df, plotem=False))
+        self.assertFalse(tp.quiet_checks(gapped_df))
+
+    def test_hourly_trends(self):
+        # Add a lot of entries at 3pm+ a few minutes every day
+        bunched_df = self.clean_df.copy(deep=True)
+        for row in range(10):
+            b_start_date = self.start_date.replace(hour=15, minute=row)
+            b_end_date = self.end_date.replace(hour=15, minute=row)
+            new_df = create_compliant_df(b_start_date, b_end_date, freq="1D")
+            bunched_df = pd.concat([bunched_df, new_df], sort=False, ignore_index=True)
+        bunched_df.sort_values("date_time", inplace=True)
+        # make new stop_id values in the right order
+        bunched_df["stop_id"] = [x for x in range(len(bunched_df))]
+
+        self.assertFalse(tp.verbose_checks(bunched_df, plotem=False))
+        self.assertFalse(tp.quiet_checks(bunched_df))
+
+    def test_day_of_month_trends(self):
+        # Add a lot of entries on the 27th of every month
+        bunched_df = self.clean_df.copy(deep=True)
+        for row in range(59):
+            b_start_date = self.start_date.replace(day=27, minute=row)
+            b_end_date = self.end_date.replace(day=27, minute=row)
+            new_df = create_compliant_df(b_start_date, b_end_date, freq="M")
+            bunched_df = pd.concat([bunched_df, new_df], sort=False, ignore_index=True)
+        bunched_df.sort_values("date_time", inplace=True)
+        # make new stop_id values in the right order
+        bunched_df["stop_id"] = [x for x in range(len(bunched_df))]
+
+        self.assertFalse(tp.verbose_checks(bunched_df, plotem=False))
+        self.assertFalse(tp.quiet_checks(bunched_df))
+
+    def test_weekly_trends(self):
+        bunched_df = self.clean_df.copy(deep=True)
+        for row in range(59):
+            b_start_date = self.start_date.replace(minute=row)
+            b_end_date = self.end_date.replace(minute=row)
+            new_df = create_compliant_df(b_start_date, b_end_date, freq="7D")
+            bunched_df = pd.concat([bunched_df, new_df], sort=False, ignore_index=True)
+        bunched_df.sort_values("date_time", inplace=True)
+        # make new stop_id values in the right order
+        bunched_df["stop_id"] = [x for x in range(len(bunched_df))]
+
+        self.assertFalse(tp.verbose_checks(bunched_df, plotem=False))
+        self.assertFalse(tp.quiet_checks(bunched_df))
+
+    def test_stops_by_day(self):
+        # didn't make quota, no problem I'll just add a few....
+        bunched_df = self.clean_df.copy(deep=True)
+        b_start_date = self.start_date + pd.Timedelta('27sec')  # offset a bit
+        b_end_date = (b_start_date + pd.Timedelta("1D"))
+        new_df = create_compliant_df(b_start_date, b_end_date, freq="1min")
+        bunched_df = pd.concat([bunched_df, new_df], sort=False, ignore_index=True)
+        bunched_df.sort_values("date_time", inplace=True)
+        # make new stop_id values in the right order
+        bunched_df["stop_id"] = [x for x in range(len(bunched_df))]
+
+        self.assertFalse(tp.verbose_checks(bunched_df, plotem=False))
+        self.assertFalse(tp.quiet_checks(bunched_df))
