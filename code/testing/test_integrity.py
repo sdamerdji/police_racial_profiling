@@ -142,6 +142,38 @@ class TestCompliance(unittest.TestCase):
         self.assertFalse(comp.verbose_checks(dup_df))
         self.assertFalse(comp.quiet_checks(dup_df))
 
+    def test_count_individuals(self):
+        demog_keys = ["age", "race", "gender", "limited_english", "lgbt", "disabilities"]
+        record = pd.Series({'stop_id': 58,
+                            'date_time': '2/1/2021 19:21',
+                            'duration': 10,
+                            'call_for_service': 'No',
+                            'location': 'Plaza Central',
+                            'actions_taken': 'No Action',
+                            'Person Search Consent Given': 'No',
+                            'Property Search Consent Given': 'No',
+                            'basis_for_search': 'No Search',
+                            'reason_for_stop': 'Traffic Violation',
+                            'result': 'Citation for infraction',
+                            'limited_english': 'No',
+                            'age': 45,
+                            'gender': 'Female',
+                            'Gender Nonconforming': 'No',
+                            'lgbt': 'No',
+                            'race': 'White',
+                            'disabilities': 'None',
+                            'evidence_found': 'None'})
+        fakedup = pd.concat([record.copy() for x in range(len(demog_keys) + 5)], axis=1, ignore_index=True).T
+        # Now, change 6 of these, but leave the rest unchanged.
+        fakedup.at[1, 'age'] = 99
+        fakedup.at[2, 'race'] = 'Alien'
+        fakedup.at[3, 'gender'] = 'non-binary'
+        fakedup.at[4, 'limited_english'] = 'maybe'
+        fakedup.at[5, 'lgbt'] = 'Yes'
+        fakedup.at[6, 'disabilities'] = 'some'
+
+        assert (comp.count_individuals(fakedup) == 7)
+
     # Temporal
     def test_clean_df_temporal(self):
         self.assertTrue(tp.verbose_checks(self.clean_df, plotem=False))

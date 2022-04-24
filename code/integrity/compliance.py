@@ -83,3 +83,44 @@ def unique_stops(df):
         success = False
 
     return success, dups
+
+def count_individuals(single_stop_df):
+    '''
+    Given a dataframe that is a subset where all rows have a single stop_id,
+    Estimate the number of individuals involved in the stop.
+
+    First look at differences in demographic variables.
+    Finally, use the information about the result. If one row has "No Action" and other rows have some action,
+    then the No Action was probably a different person.
+    '''
+    demog_keys = ["age", "race", "gender", "limited_english", "lgbt", "disabilities"]
+    stop_id = set(single_stop_df["stop_id"])
+    if len(stop_id) == 1:
+        stop_id = list(stop_id)[0]
+    else:
+        print("ERROR: single stop dataframe contains multiple stop_ids! {}".format(stop_id))
+        assert (False)
+    # get rid of exact duplicate rows.
+    orig_records = len(single_stop_df)
+    single_stop_df.drop_duplicates(inplace=True)
+    uniq_records = len(single_stop_df)
+    if uniq_records < orig_records:
+        print("Data Issue: stop_id {} has {} identical records.".format(stop_id, orig_records - uniq_records + 1))
+    if uniq_records == 1:
+        return 1
+
+    demog = single_stop_df.drop_duplicates(subset=demog_keys, inplace=False)
+    demog_counts = demog.nunique()
+    individuals = len(demog)
+    diffs = demog_counts[demog_counts > 1].keys()
+    if individuals > 1:
+        print("stop_id {}: Likely {} different individuals, differing by: {}".format(stop_id, individuals,
+                                                                                     [d for d in diffs]))
+    else:
+        uniq_res = set(single_stop_df["result"].values)
+        if len(uniq_res) > 1 and "No Action" in uniq_res:
+            individuals = (single_stop_df["result"].value_counts())["No Action"] + 1
+            print("stop_id {}: Possibly {}+ individuals, based on different results".format(stop_id, individuals))
+        else:
+            print("stop_id {}: Likely single individual with multiple actions.".format(stop_id))
+    return individuals
