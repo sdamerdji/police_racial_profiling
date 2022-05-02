@@ -138,7 +138,7 @@ class TestCompliance(unittest.TestCase):
 
     def test_unique_stops(self):
         extra_row = self.clean_df[0:1]
-        dup_df = self.clean_df.append(extra_row)
+        dup_df = pd.concat([self.clean_df, extra_row], ignore_index=True)
         self.assertFalse(comp.verbose_checks(dup_df))
         self.assertFalse(comp.quiet_checks(dup_df))
 
