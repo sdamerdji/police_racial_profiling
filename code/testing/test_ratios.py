@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import unittest
 import sys, os
 
@@ -23,3 +24,10 @@ class TestRatios(unittest.TestCase):
         self.assertTrue(all['ice cream'] == 7)
         self.assertTrue(all['cake'] == 7)
         self.assertTrue(all['pie'] == 15)
+
+    def test_generate_relative_df(self):
+        green = rat.add_races(self.df, ['green'], field='dessert')
+        blue = rat.add_races(self.df, ['blue'], field='dessert')
+        rel = rat.generate_relative_df(green, blue, "green", "blue")
+        np.testing.assert_almost_equal(rel["Expected blue"], [5, 5, 5, 5])
+        np.testing.assert_almost_equal(rel['Relative'], [1.2, 0.4, 0.4, 2.0], decimal=2)
