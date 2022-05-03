@@ -43,6 +43,9 @@ def verbose_checks(df):
     check, dups = unique_stops(df)
     print("All stops unique: {}".format(pretty_bool(check)))
     if not check:
+        print("   Total records:   {}".format(len(df)))
+        print("   Unique stop_ids: {}".format(len(df.drop_duplicates(subset="stop_id", inplace=False))))
+        print("   Unique records:  {}".format(len(df.drop_duplicates(inplace=False))))
         print("   Duplicate stop_ids: {}".format(dups["stop_id"].values))
     success = success and check
     return success
@@ -84,7 +87,8 @@ def unique_stops(df):
 
     return success, dups
 
-def count_individuals(single_stop_df):
+
+def count_individuals(single_stop_df, verbose=False):
     '''
     Given a dataframe that is a subset where all rows have a single stop_id,
     Estimate the number of individuals involved in the stop.
@@ -104,7 +108,7 @@ def count_individuals(single_stop_df):
     orig_records = len(single_stop_df)
     single_stop_df.drop_duplicates(inplace=True)
     uniq_records = len(single_stop_df)
-    if uniq_records < orig_records:
+    if (uniq_records < orig_records) and verbose:
         print("Data Issue: stop_id {} has {} identical records.".format(stop_id, orig_records - uniq_records + 1))
     if uniq_records == 1:
         return 1
@@ -114,13 +118,16 @@ def count_individuals(single_stop_df):
     individuals = len(demog)
     diffs = demog_counts[demog_counts > 1].keys()
     if individuals > 1:
-        print("stop_id {}: Likely {} different individuals, differing by: {}".format(stop_id, individuals,
-                                                                                     [d for d in diffs]))
+        if verbose:
+            print("stop_id {}: Likely {} different individuals, differing by: {}".format(stop_id, individuals,
+                                                                                         [d for d in diffs]))
     else:
         uniq_res = set(single_stop_df["result"].values)
         if len(uniq_res) > 1 and "No Action" in uniq_res:
             individuals = (single_stop_df["result"].value_counts())["No Action"] + 1
-            print("stop_id {}: Possibly {}+ individuals, based on different results".format(stop_id, individuals))
+            if verbose:
+                print("stop_id {}: Possibly {}+ individuals, based on different results".format(stop_id, individuals))
         else:
-            print("stop_id {}: Likely single individual with multiple actions.".format(stop_id))
+            if verbose:
+                print("stop_id {}: Likely single individual with multiple actions.".format(stop_id))
     return individuals
