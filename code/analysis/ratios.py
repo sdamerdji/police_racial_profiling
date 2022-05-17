@@ -1,5 +1,9 @@
 import pandas as pd
 import numpy as np
+import sys, os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'analysis'))
+import bayes_binomial as bayes
 
 
 def add_races(data, races_to_add, field='result'):
@@ -15,6 +19,9 @@ def add_races(data, races_to_add, field='result'):
         res = res.add(data[field][data['race'] == race].value_counts(), fill_value=0)
     return res
 
+def row_odds(row, base_race, n_base, comparison_race, n_comparison):
+    odds = bayes.odds_different(row[base_race], n_base, row[comparison_race], n_comparison)
+    return odds
 
 def generate_relative_df(baseline, comparison, base_race, comparison_race):
     '''
@@ -38,4 +45,8 @@ def generate_relative_df(baseline, comparison, base_race, comparison_race):
     relative = (comparison / baseline) * (sum(baseline) / sum(comparison))
     temp_dict["Expected {}".format(comparison_race)] = scaled_baseline
     temp_dict["Relative"] = relative
-    return pd.DataFrame(temp_dict)
+    df = pd.DataFrame(temp_dict)
+    n_base = sum(baseline)
+    n_comparison = sum(comparison)
+    df['Odds'] = df.apply(row_odds, args=(base_race, n_base, comparison_race, n_comparison), axis=1)
+    return df
