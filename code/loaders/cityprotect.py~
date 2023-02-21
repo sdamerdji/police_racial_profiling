@@ -1,0 +1,12 @@
+import pandas as pd
+from datetime import datetime
+import glob
+import re
+
+def cityprotect(target_dir):
+	filelist = glob.glob("../data/raw_data/{}/*_report.csv".format(target_dir))
+	df = pd.concat([pd.read_csv(f) for f in filelist], ignore_index=True)
+	df = df[df.ne(df.columns).any(1)]
+
+	print("complete")
+
