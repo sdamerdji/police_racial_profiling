@@ -4,6 +4,7 @@ from colorama import Fore, Style
 
 # Required fields from https://www.ripalog.com/ripa/ripa-faq.htm
 # and the official regulation: https://oag.ca.gov/sites/all/files/agweb/pdfs/ripa/stop-data-reg-final-text-110717.pdf?
+#
 
 required_fields = {'stop_id',
                    'age', 'race', 'gender',
