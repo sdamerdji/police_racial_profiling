@@ -34,6 +34,31 @@ def get_population(city):
         hybrid_pop = [17735, 1357, 9586 * (7749 / (7749 + 2919)), 9586 * (2919 / (7749 + 2919)), 145, 0, 24, 1567, 100]
 
         return pd.Series(hybrid_pop, index=canonical_race_list)
+    elif city == "Union City":
+        return pd.Series([67039], index=["total"])
+    elif city == "Saratoga":
+        return pd.Series([28437], index=["total"])
+    elif city == "Cupertino":
+        return pd.Series([55326], index=["total"])
+    elif city == "Los Altos Hills":
+        return pd.Series([7879], index=["total"])
     else:
         print("City {} not available.".format(city))
         return None
+
+def get_households(city):
+    if city == "Los Altos":
+        # from https://worldpopulationreview.com/us-cities/los-altos-ca-population, retrieved 8/31/23
+        return 10805
+    elif city == "Union City":
+        return 20800
+    elif city == "Saratoga":
+        return 11039
+    elif city == "Los Altos Hills":
+        return 3125
+    elif city == "Cupertino":
+        return 20963
+    else:
+        print("City {} not available.".format(city))
+        return None
+        

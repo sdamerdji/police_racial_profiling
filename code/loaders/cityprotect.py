@@ -41,12 +41,14 @@ def reclassify_incidents(df, prop_list=None, violent_list=None):
 	return df
 
 		
-def cityprotect(target_dir, end_date=datetime(year=2023, month=1, day=1), reclassify=True, prop_list=None, violent_list=None):
+def cityprotect(target_dir, start_date=datetime(year=2017, month=1, day=1),
+						end_date=datetime(year=2023, month=1, day=1), 
+						reclassify=True, prop_list=None, violent_list=None):
 	filelist = glob.glob("{}/*_report.csv".format(target_dir))
 	print("Loading from {} files.".format(len(filelist)))
 	df = pd.concat([protect_read_csv(f) for f in filelist], ignore_index=True)
 	# Header rows are sometimes copied throughout the file.
-	df = df[df.ne(df.columns).any(1)]
+	df = df[df.ne(df.columns).any(axis=1)]
 	# Format the dates to datetimes
 	df["date"] = pd.to_datetime(df["date"].str.upper(), format="%m/%d/%Y, %I:%M:%S %p")
 	df["updateDate"] = pd.to_datetime(df["updateDate"].str.upper(), format="%m/%d/%Y, %I:%M:%S %p")
@@ -55,6 +57,7 @@ def cityprotect(target_dir, end_date=datetime(year=2023, month=1, day=1), reclas
 	df["parentIncidentType"] = df["parentIncidentType"].str.strip()
 
 	df = df[df["date"] < end_date]
+	df = df[df["date"] >= start_date]
 	df.sort_values(by=['date'], inplace=True)
 
 	if reclassify:
