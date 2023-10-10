@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 
-def load_ripa_data(file_list, dir="../data/clean_data", verbose=False):
+def load_ripa_data(file_list, dir="../../data/clean_data", verbose=False):
     # Load CSVs in the format that Xuesong Wang used up to at least 8/28/2023
     df_list = read_csv_list(file_list, dir)
 
@@ -25,7 +25,7 @@ def read_csv_list(file_list, dir):
                                    encoding_errors="replace")
         # There is a typo in one of the column names we need to fix
         if "reaultOfStop" in df.columns:
-            df.rename(columns={"reaultOfStop":"resultOfStop"})
+            df.rename(columns={"reaultOfStop":"resultOfStop"}, inplace=True)
         
         # Make the times into datetime objects
         df["stopTime"] = pd.to_datetime(df["stopTime"], format="%m/%d/%Y %H:%M")
