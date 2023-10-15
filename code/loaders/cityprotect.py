@@ -13,7 +13,29 @@ reclassification_dir = {"Theft": ["theft", "burglary", "larceny"],
                         "Other Violent Offense": ["shooting", "shots fired", "car jacking",
                                                   "carjacking", "kidnapping"]
                         }
-
+cities_in_scc = ["Alviso",
+				"Campbell",
+				"Coyote",
+				"Cupertino",
+				"Gilroy",
+				"Holy City",
+				"Los Altos",
+				"Los Altos Hills",
+				"Monte Sereno", 
+				"Los Gatos",
+				"Milpitas",
+				"Morgan Hill",
+				"Mount Hamilton",
+				"Mountain View",
+				"Palo Alto",
+				"Redwood Estates",
+				"San Jose",
+				"San Martin",
+				"Santa Clara",
+				"Saratoga",
+				"Stanford",
+				"Sunnyvale"
+]
 
 def protect_read_csv(f):
 	try:
@@ -44,6 +66,8 @@ def reclassify_incidents(df, prop_list=None, violent_list=None):
 def cityprotect(target_dir, start_date=datetime(year=2017, month=1, day=1),
 						end_date=datetime(year=2023, month=1, day=1), 
 						reclassify=True, prop_list=None, violent_list=None):
+	print("Starting: {}".format(start_date))
+	print("Ending:   {}".format(end_date))
 	filelist = glob.glob("{}/*_report.csv".format(target_dir))
 	print("Loading from {} files.".format(len(filelist)))
 	df = pd.concat([protect_read_csv(f) for f in filelist], ignore_index=True)
@@ -66,4 +90,64 @@ def cityprotect(target_dir, start_date=datetime(year=2017, month=1, day=1),
 
 	return df
 	
+def attempt_nom(nom, blocksizedAddr):
+    place = re.sub("BLOCK", "", blocksizedAddr.upper()) + ", SANTA CLARA COUNTY, CA"
+    try:
+        location = nom.geocode(place)
+        print("Nom: {}".format(location.raw["display_name"]))
+        display_name = [s.strip() for s in location.raw["display_name"].split(",")]                         
+        try:
+            county_idx = display_name.index("Santa Clara County")
+        except ValueError:
+            print("SCC not found: {}".format(display_name))
+            return None
+        city = display_name[county_idx-1]
+        postcode = display_name[-2]
+        return city, postcode
+    except:
+        return None
+        
+def attempt_goog(goog, blocksizedAddr):
+    place = re.sub("BLOCK", "", blocksizedAddr.upper()) + ", SANTA CLARA COUNTY, CA"
+    try:
+        location = goog.geocode(place)
+        city = location.address.split(",")[1].strip()
+        postcode = re.sub("[A-Z]*", "", location.address.split(",")[2]).strip()
+        return city, postcode
+    except:
+        return None
+    
+def geocode(row, nom, goog):
+	blockaddr = row["blocksizedAddress"]
+	loc_tuple = attempt_nom(nom, blockaddr)
+	if not loc_tuple or loc_tuple[0] not in cities_in_scc:
+		loc_tuple = attempt_goog(goog, blockaddr)
+		if loc_tuple:
+			print("Google successful on {}".format(blockaddr))
+		else:
+			return None, None
+	else:
+		print("Nominatim successful on {}".format(blockaddr))
+
+	if loc_tuple[1]:
+		postcode = int(loc_tuple[1])
+	else:
+		postcode = None
+
+	return loc_tuple[0], postcode
+
+def infer_cities(df, nom, goog, max=300):
+	counter = 0
+	for index, row in df[df["inferredCity"] == "unknown"].iterrows():
+		location_tuple = geocode(row, nom, goog)
+			
+		counter = counter + 1
+		df.at[index, "inferredCity"] = location_tuple[0]
+		df.at[index, "postcode"] = location_tuple[1]
+		print("\n{}: {} {}- {}, {}".format(counter, df.at[index, "date"], row["blocksizedAddress"], df.at[index,"inferredCity"], df.at[index, "postalCode"]))
+		if counter/200 == round(counter/200):
+			print("Saving...")
+			df.to_pickle("SCCSheriff.pkl")
+		if counter > max:
+			break
 
