@@ -34,7 +34,8 @@ cities_in_scc = ["Alviso",
 				"Santa Clara",
 				"Saratoga",
 				"Stanford",
-				"Sunnyvale"
+				"Sunnyvale",
+				"Willow Glen"
 ]
 
 def protect_read_csv(f):
@@ -91,31 +92,46 @@ def cityprotect(target_dir, start_date=datetime(year=2017, month=1, day=1),
 	return df
 	
 def attempt_nom(nom, blocksizedAddr):
-    place = re.sub("BLOCK", "", blocksizedAddr.upper()) + ", SANTA CLARA COUNTY, CA"
-    try:
-        location = nom.geocode(place)
-        print("Nom: {}".format(location.raw["display_name"]))
-        display_name = [s.strip() for s in location.raw["display_name"].split(",")]                         
-        try:
-            county_idx = display_name.index("Santa Clara County")
-        except ValueError:
-            print("SCC not found: {}".format(display_name))
-            return None
-        city = display_name[county_idx-1]
-        postcode = display_name[-2]
-        return city, postcode
-    except:
-        return None
+	place = re.sub("BLOCK", "", blocksizedAddr.upper()) + ", SANTA CLARA COUNTY, CA"
+	try:
+		location = nom.geocode(place)
+	except:
+		print("Nom: failed")
+		return None
+	if location:
+		display_name = [s.strip() for s in location.raw["display_name"].split(",")]                         
+		try:
+			county_idx = display_name.index("Santa Clara County")
+		except ValueError:
+			print("Nom: SCC key not found: {}".format(display_name))
+			return None
+		print("Nom: {}".format(location.raw["display_name"]))
+		city = display_name[county_idx-1]
+		postcode = display_name[-2]
+		if city in cities_in_scc:
+			return city, postcode
+		else:
+			print("Nom: {} not a city in Santa Clara County".format(city))
+			return None	
+	else:
+		print("Nom returned None.")
+		return None
+
         
 def attempt_goog(goog, blocksizedAddr):
-    place = re.sub("BLOCK", "", blocksizedAddr.upper()) + ", SANTA CLARA COUNTY, CA"
-    try:
-        location = goog.geocode(place)
-        city = location.address.split(",")[1].strip()
-        postcode = re.sub("[A-Z]*", "", location.address.split(",")[2]).strip()
-        return city, postcode
-    except:
-        return None
+	place = re.sub("BLOCK", "", blocksizedAddr.upper()) + ", SANTA CLARA COUNTY, CA"
+	try:
+		location = goog.geocode(place)
+	except:
+		print("Google failed.")
+		return None
+	city = location.address.split(",")[1].strip()
+	postcode = re.sub("[A-Z]*", "", location.address.split(",")[2]).strip()
+	if city in cities_in_scc:
+		return city, postcode
+	else:
+		print("Goog: {} not a city in Santa Clara County".format(city))
+		return None
     
 def geocode(row, nom, goog):
 	blockaddr = row["blocksizedAddress"]
