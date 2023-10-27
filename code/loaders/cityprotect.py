@@ -14,11 +14,13 @@ reclassification_dir = {"Theft": ["theft", "burglary", "larceny"],
                                                   "carjacking", "kidnapping"]
                         }
 cities_in_scc = ["Alviso",
+				 "Alum Rock",
 				"Campbell",
 				"Coyote",
 				"Cupertino",
 				"Gilroy",
 				"Holy City",
+				"Hollister",
 				"Los Altos",
 				"Los Altos Hills",
 				"Monte Sereno", 
@@ -29,6 +31,7 @@ cities_in_scc = ["Alviso",
 				"Mountain View",
 				"Palo Alto",
 				"Redwood Estates",
+				"Rucker",
 				"San Jose",
 				"San Martin",
 				"Santa Clara",
@@ -92,6 +95,10 @@ def cityprotect(target_dir, start_date=datetime(year=2017, month=1, day=1),
 	return df
 	
 def attempt_nom(nom, blocksizedAddr):
+	# before calling this, you'll need to do something like this
+	#         nom = Nominatim(user_agent="policedata", scheme='http')
+	# Then pass in 'nom' as the first argument.
+
 	place = re.sub("BLOCK", "", blocksizedAddr.upper()) + ", SANTA CLARA COUNTY, CA"
 	try:
 		location = nom.geocode(place)
@@ -119,6 +126,10 @@ def attempt_nom(nom, blocksizedAddr):
 
         
 def attempt_goog(goog, blocksizedAddr):
+	# before calling this, you'll need to do something like this, with your own API key
+	#        goog = GoogleV3(api_key=api_key)
+	# Then pass 'goog' as the first argument.
+
 	place = re.sub("BLOCK", "", blocksizedAddr.upper()) + ", SANTA CLARA COUNTY, CA"
 	try:
 		location = goog.geocode(place)
@@ -133,37 +144,35 @@ def attempt_goog(goog, blocksizedAddr):
 		print("Goog: {} not a city in Santa Clara County".format(city))
 		return None
     
-def geocode(row, nom, goog):
-	blockaddr = row["blocksizedAddress"]
-	loc_tuple = attempt_nom(nom, blockaddr)
-	if not loc_tuple or loc_tuple[0] not in cities_in_scc:
-		loc_tuple = attempt_goog(goog, blockaddr)
-		if loc_tuple:
-			print("Google successful on {}".format(blockaddr))
-		else:
-			return None, None
-	else:
-		print("Nominatim successful on {}".format(blockaddr))
 
-	if loc_tuple[1]:
-		postcode = int(loc_tuple[1])
-	else:
-		postcode = None
+def infer_cities(df, nom, goog):
+    # Infer the cities from the block addresses
+    # For nom and goog see attempt_nom and attempt_goog
 
-	return loc_tuple[0], postcode
+    googcount = 0
+	# Some blocksizedAddress fields are NaNs, which is Not Helpful
+    df.loc[df["blocksizedAddress"].apply(lambda x: type(x) == float), "inferredCity"] = "blank"
 
-def infer_cities(df, nom, goog, max=300):
-	counter = 0
-	for index, row in df[df["inferredCity"] == "unknown"].iterrows():
-		location_tuple = geocode(row, nom, goog)
-			
-		counter = counter + 1
-		df.at[index, "inferredCity"] = location_tuple[0]
-		df.at[index, "postcode"] = location_tuple[1]
-		print("\n{}: {} {}- {}, {}".format(counter, df.at[index, "date"], row["blocksizedAddress"], df.at[index,"inferredCity"], df.at[index, "postalCode"]))
-		if counter/200 == round(counter/200):
-			print("Saving...")
-			df.to_pickle("SCCSheriff.pkl")
-		if counter > max:
-			break
+	# We will iterate over unique addresses, not records.
+    unique_addresses = df[df["inferredCity"] == "unknown"]["blocksizedAddress"].unique()
 
+    for idx, addr in enumerate(unique_addresses):
+        print("{}: {}: {} instances".format(idx, addr, len(df[df["blocksizedAddress"] == addr])))
+        result = attempt_nom(nom, addr)
+        if not result:
+            result = attempt_goog(goog, addr)
+            googcount += 1
+
+        if result:  # fix all the records at once
+            df.loc[df["blocksizedAddress"] == addr, "inferredCity"] = result[0]
+            df.loc[df["blocksizedAddress"] == addr, "postcode"] = result[1]
+        else:
+            print("Failed to identify {}".format(addr))   
+
+        if idx%200 == 0:
+            print("Saving...")
+            print("Google API count: {}".format(googcount))
+            df.to_pickle("SCCSheriff.pkl") 
+
+    print("Made {} calls to the Google API.")
+    return df                                       
