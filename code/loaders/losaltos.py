@@ -52,6 +52,9 @@ def read_csv_list(file_list, dir):
         }
         df.rename(columns=std_cols, inplace="True")
 
+        # use common indication for Latino(a)
+        df["race"] = df["race"].str.replace("Latino/a", "Latino(a)")
+
         df_list.append(df)
 
  
