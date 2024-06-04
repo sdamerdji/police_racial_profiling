@@ -93,6 +93,39 @@ def cityprotect(target_dir, start_date=datetime(year=2017, month=1, day=1),
 
 
 	return df
+
+def new_attempt_nom(nom, blocksizedAddr):
+	# before calling this, you'll need to do something like this
+	#         nom = Nominatim(user_agent="policedata", scheme='http')
+	# Then pass in 'nom' as the first argument.
+
+	place = re.sub("BLOCK", "", blocksizedAddr.upper()) + ", SANTA CLARA COUNTY, CA"
+	try:
+		location = nom.geocode(place, addressdetails=True)
+	except:
+		print("Nom: failed")
+		return None
+	if location:
+		address = location.raw['address']                       
+		try:
+			county_idx = address['county']
+		except ValueError:
+			print("Nom: SCC key not found: {}".format(location.raw['display_name']))
+			return None
+		print("Nom: {}".format(location.raw["display_name"]))
+		try:
+			city = address['town']
+		except:
+			print(address.keys)
+		postcode = address['postcode']
+		if city in cities_in_scc:
+			return city, postcode
+		else:
+			print("Nom: {} not a city in Santa Clara County".format(city))
+			return None	
+	else:
+		print("Nom returned None.")
+		return None
 	
 def attempt_nom(nom, blocksizedAddr):
 	# before calling this, you'll need to do something like this
