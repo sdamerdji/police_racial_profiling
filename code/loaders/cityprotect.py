@@ -43,6 +43,11 @@ cities_in_scc = ["Alviso",
 
 zipcode_lookup = {95035: 'Milpitas', 95123: 'San Jose', 95020: 'Gilroy', 95014: 'Cupertino', 95051: 'Santa Clara', 95111: 'San Jose', 94087: 'Sunnyvale', 95112: 'San Jose', 95125: 'San Jose', 95122: 'San Jose', 95116: 'San Jose', 95124: 'San Jose', 95136: 'San Jose', 94086: 'Sunnyvale', 95148: 'San Jose', 95008: 'Campbell', 94303: 'Palo Alto', 95050: 'Santa Clara', 95132: 'San Jose', 95120: 'San Jose', 95129: 'San Jose', 94040: 'Mountain View', 95121: 'San Jose', 95126: 'San Jose', 95118: 'San Jose', 95131: 'San Jose', 95070: 'Saratoga', 94043: 'Mountain View', 95134: 'San Jose', 95117: 'San Jose', 95133: 'San Jose', 94306: 'Palo Alto', 94089: 'Sunnyvale', 95054: 'Santa Clara', 94085: 'Sunnyvale', 94024: 'Los Altos', 95135: 'San Jose', 95110: 'San Jose', 94022: 'Los Altos', 94301: 'Palo Alto', 94041: 'Mountain View', 95030: 'Los Gatos', 95130: 'Campbell', 95119: 'San Jose', 95139: 'San Jose', 95046: 'San Martin', 95113: 'San Jose', 94308: 'Santa Clara', 95053: 'Santa Clara', 95002: 'San Jose', 95015: 'Santa Clara', 95031: 'San Jose', 95038: 'Morgan Hill', 95159: 'Santa Clara', 95192: 'San Jose', 95056: 'Santa Clara', 95109: 'Santa Clara', 95150: 'Santa Clara', 94039: 'Mountain View'}
 
+communities_dict = {
+  "Redwood Estates": 'Los Gatos', 
+  "Loyola Corners": 'Los Altos',
+  "Stanford": 'Palo Alto'
+}
 
 def protect_read_csv(f):
 	try:
@@ -98,7 +103,7 @@ def cityprotect(target_dir, start_date=datetime(year=2017, month=1, day=1),
 	return df
 
 def get_city(address_dict):
-	for i in ["town", "village", "city"]:
+	for i in ["town", "village", "city", "hamlet"]:
 		if i in address_dict.keys():
 			return address_dict[i]
 	return None
@@ -131,6 +136,8 @@ def attempt_nom(nom, blocksizedAddr):
 				city = zipcode_lookup[int(address["postcode"])] # if no city listed, check if city can be found from zipcode dict
 			if city and city in cities_in_scc:
 				return city, address["postcode"]
+			elif city and city in communities_dict.keys():
+				return communities_dict[city], address['postcode']
 			else:
 				print("Nom: could not locate city or not in Santa Clara County of: {}".format(place))
 		else:
